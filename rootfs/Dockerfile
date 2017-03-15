@@ -52,6 +52,12 @@ ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher envvars
 
 # Default Extensions
 RUN pip install --no-cache-dir git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
+    pip install --no-cache-dir git+https://github.com/ckan/ckanext-googleanalytics.git@v0.0.2#egg=ckanext-googleanalytics && \
+    pip install --no-cache-dir git+https://github.com/ckan/ckanext-pages.git#egg=ckanext-pages && \
+    pip install --no-cache-dir git+https://github.com/okfn/ckanext-sentry.git#egg=ckanext-sentry && \
+    pip install -r ${APP_DIR}/src/ckanext-sentry/requirements.txt && \
+    pip install --no-cache-dir git+https://github.com/okfn/ckanext-s3filestore.git@v0.0.4#egg=ckanext-s3filestore && \
+    pip install -r ${APP_DIR}/src/ckanext-s3filestore/requirements.txt
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
