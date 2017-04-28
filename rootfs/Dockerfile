@@ -5,8 +5,8 @@ MAINTAINER Keitaro Inc <info@keitaro.info>
 ENV APP_DIR=/srv/app
 ENV SRC_DIR=/srv/app/src
 ENV PIP_SRC=${SRC_DIR}
-ENV GIT_URL=https://github.com/ckan/ckan.git
-ENV GIT_BRANCH=ckan-2.6.2
+ENV GIT_URL=https://github.com/viderumglobal/ckan.git
+ENV GIT_BRANCH=bs3-temp-fix
 ENV CKAN_SITE_URL=http://localhost:5000
 ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher envvars
 
@@ -21,6 +21,12 @@ RUN apk add --no-cache git \
         postgresql-client \
         python \
         nginx \
+        libxml2 \
+        libxslt \
+        libstdc++ \
+        libxml2-dev \
+        libxslt-dev \
+        py-cffi \
         apache2-utils && \
     # Packages to build CKAN requirements and plugins
     apk add --no-cache --virtual .build-deps \
@@ -30,7 +36,7 @@ RUN apk add --no-cache git \
         g++ \
         autoconf \
         automake \
-	libtool \
+        libtool \
         musl-dev \
         python-dev && \
     # Create SRC_DIR
@@ -63,6 +69,7 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     cd ${SRC_DIR}/ckan && \
     cp who.ini ${APP_DIR} && \
     pip install -r requirements.txt && \
+    pip install -r dev-requirements.txt && \
     # Install CKAN envvars to support loading config from environment variables
     pip install -e git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
     # Create and update CKAN config
