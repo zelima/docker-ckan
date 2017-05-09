@@ -1,26 +1,33 @@
-FROM keitaro/base:0.1
+FROM keitaro/base:0.2
 
-MAINTAINER Keitaro Inc <info@keitaro.info>
+MAINTAINER Keitaro Inc <info@keitaro.com>
 
 ENV APP_DIR=/srv/app
 ENV SRC_DIR=/srv/app/src
+ENV PIP_SRC=${SRC_DIR}
 ENV GIT_URL=https://github.com/ckan/ckan.git
-ENV GIT_BRANCH=ckan-2.5.4
+ENV GIT_BRANCH=ckan-2.5.5
 ENV CKAN_SITE_URL=http://localhost:5000
 ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher envvars
 
 WORKDIR ${APP_DIR}
 
+#########################
+### Base docker layer ###
+#########################
+# Create a local user and group to run the app
+RUN addgroup -g 92 -S ckan && \
+    adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
 # Install necessary packages to run CKAN
 RUN apk add --no-cache git \
         gettext \
         postgresql-client \
         python \
-        py-pip \
-        py-gunicorn && \
-    # Temporary packages to build CKAN requirements
+        apache2-utils && \
+    # Packages to build CKAN requirements and plugins
     apk add --no-cache --virtual .build-deps \
         postgresql-dev \
+        linux-headers \
         gcc \
         make \
         g++ \
@@ -28,42 +35,50 @@ RUN apk add --no-cache git \
         automake \
 	libtool \
         musl-dev \
+        pcre-dev \
         python-dev && \
-    # Build and install libgeos to support geospatial
-    git clone -b 3.6.0 --depth=1 --single-branch https://git.osgeo.org/gogs/geos/geos.git ${SRC_DIR}/geos && \
+    # Create SRC_DIR
+    mkdir -p ${SRC_DIR} && \
+    # Install pip and uwsgi
+    curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
+    python ${SRC_DIR}/get-pip.py && \
+    pip install --no-cache-dir uwsgi gevent && \
+    rm -rf ${SRC_DIR}/get-pip.py
+
+############################
+### libgeos docker layer ###
+############################
+# Build and install libgeos to support geospatial
+RUN git clone -b 3.6.0 --depth=1 --single-branch https://git.osgeo.org/gogs/geos/geos.git ${SRC_DIR}/geos && \
     cd ${SRC_DIR}/geos && \
     ./autogen.sh && \
     ./configure --prefix /usr && \
     make -j2 && \
     make install && \
-    # Fetch CKAN and install
-    git clone -b ${GIT_BRANCH} --depth=1 --single-branch ${GIT_URL} ${SRC_DIR}/ckan && \
+    rm -rf ${SRC_DIR}/geos
+
+#########################
+### CKAN docker layer ###
+#########################
+# Install CKAN
+RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     cd ${SRC_DIR}/ckan && \
     cp who.ini ${APP_DIR} && \
-    python setup.py install && \
-    pip install --no-cache-dir testrepository && \
-    pip install --no-cache-dir --upgrade -r requirements.txt && \
-    # Remove temporary packages and files
-    apk del .build-deps && \
-    rm -rf ${SRC_DIR}
-
-# CKAN plugins to enable
-ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher envvars
-
-# Default Extensions
-RUN pip install --no-cache-dir git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
-    pip install --no-cache-dir git+https://github.com/ckan/ckanext-googleanalytics.git@v0.0.2#egg=ckanext-googleanalytics && \
-    pip install --no-cache-dir git+https://github.com/ckan/ckanext-pages.git#egg=ckanext-pages && \
-    pip install --no-cache-dir git+https://github.com/okfn/ckanext-sentry.git#egg=ckanext-sentry && \
-    pip install -r ${APP_DIR}/src/ckanext-sentry/requirements.txt && \
-    pip install --no-cache-dir git+https://github.com/okfn/ckanext-s3filestore.git@v0.0.4#egg=ckanext-s3filestore && \
-    pip install -r ${APP_DIR}/src/ckanext-s3filestore/requirements.txt
+    pip install -r requirements.txt && \
+    # Install CKAN envvars to support loading config from environment variables
+    pip install -e git+https://github.com/okfn/ckanext-envvars.git@0.0.1#egg=ckanext-envvars && \
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
-    paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
+    paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}" && \
+    # Change ownership to app user
+    chown -R ckan:ckan /srv/app
 
-COPY setup ${APP_DIR}
+COPY setup/app ${APP_DIR}
 
 EXPOSE 5000
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD curl --fail http://localhost:5000/api/3/action/status_show || exit 1
+
+USER ckan
 
 CMD ["/srv/app/start_ckan.sh"]
