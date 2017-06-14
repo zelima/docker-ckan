@@ -8,7 +8,7 @@ ENV PIP_SRC=${SRC_DIR}
 ENV GIT_URL=https://github.com/ckan/ckan.git
 ENV GIT_BRANCH=ckan-2.6.2
 ENV CKAN_SITE_URL=http://localhost:5000
-ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars
+ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars spatial_metadata
 
 WORKDIR ${APP_DIR}
 
@@ -21,7 +21,9 @@ RUN apk add --no-cache git \
         postgresql-client \
         python \
         nginx \
-        apache2-utils && \
+        apache2-utils \
+        libxml2 \
+        libxslt && \
     # Packages to build CKAN requirements and plugins
     apk add --no-cache --virtual .build-deps \
         postgresql-dev \
@@ -31,8 +33,15 @@ RUN apk add --no-cache git \
         autoconf \
         automake \
 	libtool \
-        musl-dev \
-        python-dev && \
+        python-dev \
+        libxml2-dev \
+        libxslt-dev && \
+
+    apk add --no-cache --virtual .build-deps-testing \
+        --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+        gdal-dev \
+        geos-dev && \
+
     # Create SRC_DIR
     mkdir -p ${SRC_DIR} && \
     # Create nginx run dir
@@ -43,7 +52,9 @@ RUN apk add --no-cache git \
     pip install gunicorn gevent && \
     pip install supervisor && \
     mkdir /etc/supervisord.d && \
-    rm -rf ${SRC_DIR}/get-pip.py
+    rm -rf ${SRC_DIR}/get-pip.py && \
+    pip install pygdal==2.1.3.3
+
 
 COPY setup/supervisord.conf /etc
 
@@ -74,6 +85,8 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     pip install -r requirements.txt && \
     # Install CKAN envvars to support loading config from environment variables
     pip install -e git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
+    pip install --no-cache-dir git+https://github.com/okfn/ckanext-spatial.git#egg=ckanext-spatial && \
+    pip install --no-cache-dir -r https://raw.githubusercontent.com/ckan/ckanext-spatial/master/pip-requirements.txt && \
     pip install -e git+https://github.com/ViderumGlobal/ckanext-harvest.git@sentinel#egg=ckanext-harvest && \
     pip install -r https://raw.githubusercontent.com/ViderumGlobal/ckanext-harvest/sentinel/pip-requirements.txt && \
     # Create and update CKAN config
@@ -87,7 +100,6 @@ COPY setup/cron.conf /etc/supervisord.d/cron.conf
 COPY setup ${APP_DIR}
 COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
 COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
-
 
 EXPOSE 5000
 
