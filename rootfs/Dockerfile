@@ -8,7 +8,7 @@ ENV PIP_SRC=${SRC_DIR}
 ENV GIT_URL=https://github.com/ckan/ckan.git
 ENV GIT_BRANCH=ckan-2.6.2
 ENV CKAN_SITE_URL=http://localhost:5000
-ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars spatial_metadata harvestdme_esa doc_harvester waf_harvester
+ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars spatial_metadata harvestdme_esa doc_harvester waf_harvester dcat dcat_rdf_harvester dcat_json_harvester dcat_json_interface
 
 WORKDIR ${APP_DIR}
 
@@ -89,6 +89,8 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     pip install --no-cache-dir -r https://raw.githubusercontent.com/ckan/ckanext-spatial/master/pip-requirements.txt && \
     pip install -e git+https://github.com/ViderumGlobal/ckanext-harvest.git@sentinel#egg=ckanext-harvest && \
     pip install -r https://raw.githubusercontent.com/ViderumGlobal/ckanext-harvest/sentinel/pip-requirements.txt && \
+    pip install -e git+https://github.com/ckan/ckanext-dcat.git#egg=ckanext-dcat && \
+    pip install -r https://raw.githubusercontent.com/ckan/ckanext-dcat/master/requirements.txt && \
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
