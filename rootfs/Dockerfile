@@ -8,7 +8,7 @@ ENV PIP_SRC=${SRC_DIR}
 ENV GIT_URL=https://github.com/ckan/ckan.git
 ENV GIT_BRANCH=ckan-2.6.2
 ENV CKAN_SITE_URL=http://localhost:5000
-ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars spatial_metadata
+ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars spatial_metadata harvestdme_esa doc_harvester waf_harvester
 
 WORKDIR ${APP_DIR}
 
@@ -59,7 +59,7 @@ RUN apk add --no-cache git \
 COPY setup/supervisord.conf /etc
 
 RUN mkdir -p /var/log && \
-    mkdir -m 0644 -p /var/spool/cron/crontab && \
+    mkdir -m 0644 -p /var/spool/cron/crontabs && \
     touch /var/log/cron.log && \
     mkdir -m 0644 -p /etc/cron.d
 
@@ -93,7 +93,12 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
 
-RUN echo "* * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1" >> /etc/crontab
+RUN touch crontab.tmp \
+    && echo '* * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
+    && crontab crontab.tmp \
+    && rm -rf crontab.tmp
+
+CMD [/usr/sbin/crond, -f, -d, 0]
 
 COPY setup/cron.conf /etc/supervisord.d/cron.conf
 
