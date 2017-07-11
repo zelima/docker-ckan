@@ -6,9 +6,9 @@ ENV APP_DIR=/srv/app
 ENV SRC_DIR=/srv/app/src
 ENV PIP_SRC=${SRC_DIR}
 ENV GIT_URL=https://github.com/ckan/ckan.git
-ENV GIT_BRANCH=ckan-2.6.2
+ENV GIT_BRANCH=dev-v2.7
 ENV CKAN_SITE_URL=http://localhost:5000
-ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars
+ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher envvars
 
 WORKDIR ${APP_DIR}
 
@@ -16,14 +16,15 @@ WORKDIR ${APP_DIR}
 ### Base docker layer ###
 #########################
 # Install necessary packages to run CKAN
-RUN apk add --no-cache git \
+RUN apk --update add --no-cache git \
         gettext \
         postgresql-client \
         python \
         nginx \
         apache2-utils \
         libxml2 \
-        libxslt && \
+        libxslt \
+        libmagic && \
     # Packages to build CKAN requirements and plugins
     apk add --no-cache --virtual .build-deps \
         postgresql-dev \
@@ -48,13 +49,6 @@ RUN apk add --no-cache git \
     pip install supervisor && \
     mkdir /etc/supervisord.d && \
     rm -rf ${SRC_DIR}/get-pip.py
-
-COPY setup/supervisord.conf /etc
-
-RUN mkdir -p /var/log && \
-    mkdir -m 0644 -p /var/spool/cron/crontabs && \
-    touch /var/log/cron.log && \
-    mkdir -m 0644 -p /etc/cron.d
 
 ############################
 ### libgeos docker layer ###
@@ -103,18 +97,8 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
 
-RUN touch crontab.tmp \
-    && echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
-    && crontab crontab.tmp \
-    && rm -rf crontab.tmp
-
-CMD [/usr/sbin/crond, -f, -d, 0]
-
-COPY setup/cron.conf /etc/supervisord.d/cron.conf
-
+COPY setup/supervisord.conf /etc
 COPY setup ${APP_DIR}
-COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
-COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
 COPY setup/redis.conf /etc/supervisord.d/redis.conf
 
 EXPOSE 5000
