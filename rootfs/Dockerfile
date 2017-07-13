@@ -1,4 +1,4 @@
-FROM keitaro/base:0.1
+FROM keitaro/base:0.3
 
 MAINTAINER Keitaro Inc <info@keitaro.info>
 

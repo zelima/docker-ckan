@@ -6,7 +6,7 @@ then
   then
     if [ "$HTPASSWD_USER" ] || [ "$HTPASSWD_PASSWORD" ]
     then
-      cp -a /srv/app/nginx.conf /etc/nginx/nginx.conf
+      cp -a /srv/app/nginx-wauth.conf /etc/nginx/nginx.conf
       htpasswd -b -c /srv/app/.htpasswd $HTPASSWD_USER $HTPASSWD_PASSWORD
       nginx
       gunicorn --log-file=- -k gevent -w 4 -b 127.0.0.1:4000 --paste production.ini
@@ -15,7 +15,9 @@ then
       exit 1
     fi
   else
-    gunicorn --log-file=- -k gevent -w 4 -b 0.0.0.0:5000 --paste production.ini
+    cp -a /srv/app/nginx.conf /etc/nginx/nginx.conf
+    nginx
+    gunicorn --log-file=- -k gevent -w 4 -b 127.0.0.1:4000 --paste production.ini
   fi
 else
   echo "[prerun] failed...not starting CKAN."
