@@ -1,7 +1,7 @@
 ##################
 ### Build CKAN ###
 ##################
-FROM keitaro/ckanbuildenv:0.1 as ckanbuild
+FROM keitaro/ckanbuildenv:0.2 as ckanbuild
 
 # Set CKAN version to build
 ENV GIT_URL=https://github.com/ckan/ckan.git
@@ -12,11 +12,10 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan
 RUN rm -rf /srv/app/src/ckan/.git
 RUN pip wheel --wheel-dir=/wheels -r ckan/requirements.txt
 
-
 #####################
 ### Build libgeos ###
 #####################
-FROM keitaro/ckanbuildenv:0.1 as geosbuild
+FROM keitaro/ckanbuildenv:0.2 as geosbuild
 
 # Set geos verson to build
 ENV GEOS_VERSION=3.6.1
@@ -28,18 +27,16 @@ RUN ./configure --prefix /usr/local
 RUN make -j2
 RUN make install-strip
 
-
 ###################
 ### Build uwsgi ###
 ###################
-FROM keitaro/ckanbuildenv:0.1 as uwsgibuild
+FROM keitaro/ckanbuildenv:0.2 as uwsgibuild
 RUN pip wheel --wheel-dir=/wheels uwsgi gevent
-
 
 ############
 ### MAIN ###
 ############
-FROM keitaro/base:0.2
+FROM keitaro/base:0.3
 
 MAINTAINER Keitaro Inc <info@keitaro.com>
 
