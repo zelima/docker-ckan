@@ -5,7 +5,7 @@ FROM keitaro/ckanbuildenv:0.2 as ckanbuild
 
 # Set CKAN version to build
 ENV GIT_URL=https://github.com/ckan/ckan.git
-ENV GIT_BRANCH=ckan-2.6.2
+ENV GIT_BRANCH=dev-v2.7
 
 WORKDIR ${SRC_DIR}
 RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan
@@ -54,13 +54,16 @@ RUN apk add --no-cache git \
         postgresql-client \
         python \
         apache2-utils \
-        varnish && \
+        libmagic && \
     # Create SRC_DIR
-    mkdir -p ${SRC_DIR}
-
-# Install pip
-RUN curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
+    mkdir -p ${SRC_DIR} && \
+    # Install pip
+    curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     python ${SRC_DIR}/get-pip.py
+
+# Create a local user and group to run the app
+RUN addgroup -g 92 -S ckan && \
+    adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
 
 # Get artifacts from build stages
 COPY --from=geosbuild /usr/local /usr/local
@@ -68,15 +71,9 @@ COPY --from=uwsgibuild /wheels /srv/app/wheels
 COPY --from=ckanbuild /wheels /srv/app/wheels
 COPY --from=ckanbuild /srv/app/src/ckan /srv/app/src/ckan
 
-# Additional install steps for build stages artifacts
-RUN pip install --no-index --find-links=/srv/app/wheels uwsgi gevent
-
-# Create a local user and group to run the app
-RUN addgroup -g 92 -S ckan && \
-    adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
-
-# Install CKAN
-RUN pip install -e /srv/app/src/ckan && \
+# Install CKAN and  build stages artifacts
+RUN pip install --no-index --find-links=/srv/app/wheels uwsgi gevent && \
+    pip install -e /srv/app/src/ckan && \
     cd ${SRC_DIR}/ckan && \
     cp who.ini ${APP_DIR} && \
     pip install --no-index --find-links=/srv/app/wheels -r requirements.txt && \
@@ -91,9 +88,6 @@ RUN pip install -e /srv/app/src/ckan && \
     rm -rf /srv/app/wheels
 
 COPY setup/app ${APP_DIR}
-COPY setup/varnish/default.vcl /etc/varnish/default.vcl
-
-RUN chown -R ckan:ckan /etc/varnish /var/lib/varnish
 
 EXPOSE 5000
 
