@@ -53,7 +53,8 @@ RUN apk add --no-cache git \
         gettext \
         postgresql-client \
         python \
-        apache2-utils && \
+        apache2-utils \
+        varnish && \
     # Create SRC_DIR
     mkdir -p ${SRC_DIR}
 
@@ -90,6 +91,9 @@ RUN pip install -e /srv/app/src/ckan && \
     rm -rf /srv/app/wheels
 
 COPY setup/app ${APP_DIR}
+COPY setup/varnish/default.vcl /etc/varnish/default.vcl
+
+RUN chown -R ckan:ckan /etc/varnish /var/lib/varnish
 
 EXPOSE 5000
 
