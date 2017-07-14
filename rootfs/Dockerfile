@@ -27,11 +27,11 @@ RUN ./configure --prefix /usr/local
 RUN make -j2
 RUN make install-strip
 
-###################
-### Build uwsgi ###
-###################
-FROM keitaro/ckanbuildenv:0.2 as uwsgibuild
-RUN pip wheel --wheel-dir=/wheels uwsgi gevent
+######################
+### Build gunicorn ###
+######################
+FROM keitaro/ckanbuildenv:0.2 as gunicornbuild
+RUN pip wheel --wheel-dir=/wheels gunicorn gevent
 
 ############
 ### MAIN ###
@@ -67,12 +67,12 @@ RUN addgroup -g 92 -S ckan && \
 
 # Get artifacts from build stages
 COPY --from=geosbuild /usr/local /usr/local
-COPY --from=uwsgibuild /wheels /srv/app/wheels
+COPY --from=gunicornbuild /wheels /srv/app/wheels
 COPY --from=ckanbuild /wheels /srv/app/wheels
 COPY --from=ckanbuild /srv/app/src/ckan /srv/app/src/ckan
 
 # Install CKAN and  build stages artifacts
-RUN pip install --no-index --find-links=/srv/app/wheels uwsgi gevent && \
+RUN pip install --no-index --find-links=/srv/app/wheels gunicorn gevent && \
     pip install -e /srv/app/src/ckan && \
     cd ${SRC_DIR}/ckan && \
     cp who.ini ${APP_DIR} && \
