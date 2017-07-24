@@ -1,6 +1,6 @@
-FROM keitaro/base:0.1
+FROM keitaro/base:0.2
 
-MAINTAINER Keitaro Inc <info@keitaro.info>
+MAINTAINER Keitaro Inc <info@keitaro.com>
 
 ENV APP_DIR=/srv/app
 ENV SRC_DIR=/srv/app/src
@@ -16,12 +16,14 @@ WORKDIR ${APP_DIR}
 #########################
 ### Base docker layer ###
 #########################
+# Create a local user and group to run the app
+RUN addgroup -g 92 -S ckan && \
+    adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
 # Install necessary packages to run CKAN
 RUN apk add --no-cache git \
         gettext \
         postgresql-client \
         python \
-        nginx \
         apache2-utils \
         libxml2 \
         libmagic \
@@ -29,12 +31,15 @@ RUN apk add --no-cache git \
     # Packages to build CKAN requirements and plugins
     apk add --no-cache --virtual .build-deps \
         postgresql-dev \
+        linux-headers \
         gcc \
         make \
         g++ \
         autoconf \
         automake \
 	libtool \
+        musl-dev \
+        pcre-dev \
         python-dev \
         libxml2-dev \
         libxslt-dev && \
@@ -46,12 +51,10 @@ RUN apk add --no-cache git \
 
     # Create SRC_DIR
     mkdir -p ${SRC_DIR} && \
-    # Create nginx run dir
-    mkdir -p /run/nginx && \
-    # Install pip and gunicorn
+    # Install pip and uwsgi
     curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     python ${SRC_DIR}/get-pip.py && \
-    pip install gunicorn gevent && \
+    pip install --no-cache-dir uwsgi gevent && \
     pip install supervisor && \
     mkdir /etc/supervisord.d && \
     rm -rf ${SRC_DIR}/get-pip.py && \
@@ -106,12 +109,16 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     cp who.ini ${APP_DIR} && \
     pip install -r requirements.txt && \
     # Install CKAN envvars to support loading config from environment variables
-    pip install -e git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
+    pip install -e git+https://github.com/okfn/ckanext-envvars.git@0.0.1#egg=ckanext-envvars && \
     pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.0.0#egg=ckanext-harvest && \
     pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.0.0/pip-requirements.txt && \
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
-    paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
+    paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}" && \
+    # Change ownership to app user
+    chown -R ckan:ckan /srv/app && \
+    # Clear the .git directory
+    rm -rf /srv/app/src/ckan/.git
 
 
 # Install additional extensions here
@@ -149,6 +156,8 @@ RUN paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = $
 EXPOSE 5000
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD curl --fail http://localhost:5000/api/3/action/status_show || exit 1
+
+USER ckan
 
 CMD ["/srv/app/start_ckan.sh"]
 
