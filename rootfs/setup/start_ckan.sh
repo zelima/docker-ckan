@@ -7,17 +7,6 @@ UWSGI_OPTS="--socket /tmp/uwsgi.sock --thunder-lock --uid 92 --gid 92 --http :50
 
 if [ $? -eq 0 ]
 then
-
-  if [ "$HTTPS_REDIRECT" -eq "1" ]
-  then
-      cp -a /srv/app/nginx.conf /etc/nginx/nginx.conf
-      nginx
-      supervisord --configuration /etc/supervisord.conf &
-      gunicorn --log-file=- -k gevent -w 4 -b 127.0.0.1:4000 --paste production.ini
-  else
-    supervisord --configuration /etc/supervisord.conf &
-    gunicorn --log-file=- -k gevent -w 4 -b 0.0.0.0:5000 --paste production.ini
-  fi
   
   # Check whether http basic auth password protection is enabled and enable basicauth routing on uwsgi respecfully
   if [ "$PASSWORD_PROTECT" = true ]
