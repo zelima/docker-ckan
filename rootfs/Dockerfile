@@ -17,8 +17,8 @@ WORKDIR ${APP_DIR}
 ### Base docker layer ###
 #########################
 # Create a local user and group to run the app
-RUN addgroup -g 92 -S ckan && \
-    adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
+#RUN addgroup -g 92 -S ckan && \
+#    adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
 # Install necessary packages to run CKAN
 RUN apk add --no-cache git \
         gettext \
@@ -28,6 +28,7 @@ RUN apk add --no-cache git \
         libxml2 \
         libmagic \
         libxslt && \
+
     # Packages to build CKAN requirements and plugins
     apk add --no-cache --virtual .build-deps \
         postgresql-dev \
@@ -38,23 +39,26 @@ RUN apk add --no-cache git \
         autoconf \
         automake \
 	libtool \
-        musl-dev \
+	musl-dev \
         pcre-dev \
         python-dev \
+        python3-dev \
         libxml2-dev \
         libxslt-dev && \
 
     apk add --no-cache --virtual .build-deps-testing \
         --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
         gdal-dev \
-        geos-dev && \
+        geos-dev
 
-    # Create SRC_DIR
-    mkdir -p ${SRC_DIR} && \
-    # Install pip and uwsgi
+# Create SRC_DIR
+RUN mkdir -p ${SRC_DIR} && \
+    # Create nginx run dir
+    mkdir -p /run/nginx && \
+    # Install pip and gunicorn
     curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     python ${SRC_DIR}/get-pip.py && \
-    pip install --no-cache-dir uwsgi gevent && \
+    pip --no-cache-dir install uwsgi gevent && \
     pip install supervisor && \
     mkdir /etc/supervisord.d && \
     rm -rf ${SRC_DIR}/get-pip.py && \
@@ -109,14 +113,14 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     cp who.ini ${APP_DIR} && \
     pip install -r requirements.txt && \
     # Install CKAN envvars to support loading config from environment variables
-    pip install -e git+https://github.com/okfn/ckanext-envvars.git@0.0.1#egg=ckanext-envvars && \
+    pip install -e git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
     pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.0.0#egg=ckanext-harvest && \
     pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.0.0/pip-requirements.txt && \
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}" && \
     # Change ownership to app user
-    chown -R ckan:ckan /srv/app && \
+#    chown -R ckan:ckan /srv/app && \
     # Clear the .git directory
     rm -rf /srv/app/src/ckan/.git
 
@@ -157,12 +161,11 @@ EXPOSE 5000
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD curl --fail http://localhost:5000/api/3/action/status_show || exit 1
 
-USER ckan
+#USER ckan
 
 CMD ["/srv/app/start_ckan.sh"]
 
 # For the indexing to create correct resource URLs, the site url
 # must be in the ini file
-ENV CKAN_SITE_URL http://beta.ckan.org
-RUN paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.site_url = ${CKAN_SITE_URL}"
-
+#ENV CKAN_SITE_URL http://beta.ckan.org
+#RUN paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.site_url = ${CKAN_SITE_URL}"
