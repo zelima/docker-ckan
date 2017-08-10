@@ -108,7 +108,7 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
 ### Celery docker layer ###
 #########################
 # Install Celery
-RUN pip install kombu==3.0.30 \
+RUN pip install kombu==3.0.30 && \
     pip install celery==3.1.0
 
 #RUN touch crontab.tmp \
