@@ -72,19 +72,19 @@ RUN git clone -b 3.6.0 --depth=1 --single-branch https://git.osgeo.org/gogs/geos
 ### redis docker layers ###
 ###########################
 # Compile and install redis needed for harvest and CKAN 2.7
-ENV REDIS_VERSION=3.2.9
-ENV CKAN__HARVEST__MQ__TYPE=redis
-ENV CKAN__HARVEST__MQ__HOSTNAME=localhost
-ENV CKAN__HARVEST__MQ__PORT=6379
-RUN apk add --no-cache linux-headers && \
-    cd ${SRC_DIR} && \
-    wget http://download.redis.io/releases/redis-${REDIS_VERSION}.tar.gz && \
-    tar xzf redis-${REDIS_VERSION}.tar.gz && \
-    rm -f redis-${REDIS_VERSION}.tar.gz && \
-    cd redis-${REDIS_VERSION} && \
-    make && \
-    cp src/redis-server /bin/redis-server && \
-    rm -rf ${SRC_DIR}/redis-${REDIS_VERSION}
+#ENV REDIS_VERSION=3.2.9
+#ENV CKAN__HARVEST__MQ__TYPE=redis
+#ENV CKAN__HARVEST__MQ__HOSTNAME=localhost
+#ENV CKAN__HARVEST__MQ__PORT=6379
+#RUN apk add --no-cache linux-headers && \
+#    cd ${SRC_DIR} && \
+#    wget http://download.redis.io/releases/redis-${REDIS_VERSION}.tar.gz && \
+#    tar xzf redis-${REDIS_VERSION}.tar.gz && \
+#    rm -f redis-${REDIS_VERSION}.tar.gz && \
+#    cd redis-${REDIS_VERSION} && \
+#    make && \
+#    cp src/redis-server /bin/redis-server && \
+#    rm -rf ${SRC_DIR}/redis-${REDIS_VERSION}
 
 
 #########################
@@ -97,25 +97,26 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     pip install -r requirements.txt && \
     # Install CKAN envvars to support loading config from environment variables
     pip install -e git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
-    pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.0.0#egg=ckanext-harvest && \
-    pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.0.0/pip-requirements.txt && \
+    #pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.0.0#egg=ckanext-harvest && \
+    #pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.0.0/pip-requirements.txt && \
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
 
-RUN touch crontab.tmp \
-    && echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
-    && crontab crontab.tmp \
-    && rm -rf crontab.tmp
+#RUN touch crontab.tmp \
+#    && echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
+#    && crontab crontab.tmp \
+#    && rm -rf crontab.tmp
 
-CMD [/usr/sbin/crond, -f, -d, 0]
+#CMD [/usr/sbin/crond, -f, -d, 0]
 
-COPY setup/cron.conf /etc/supervisord.d/cron.conf
+#COPY setup/cron.conf /etc/supervisord.d/cron.conf
 
 COPY setup ${APP_DIR}
-COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
-COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
-COPY setup/redis.conf /etc/supervisord.d/redis.conf
+#COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
+#COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
+#COPY setup/redis.conf /etc/supervisord.d/redis.conf
+COPY setup/celery-supervisor.conf /etc/supervisord.d/celery-supervisor.conf
 
 EXPOSE 5000
 
