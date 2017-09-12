@@ -10,7 +10,7 @@ ENV GIT_URL=https://github.com/ckan/ckan.git
 ENV CKAN_SITE_URL=http://localhost:5000
 # These plugins should always be added to cloud instances
 # (you can add more needed by your instance)
-ENV CKAN__PLUGINS envvars image_view text_view recline_view datastore datapusher sentry s3filestore repo_info harvest ckan_harvester
+ENV CKAN__PLUGINS envvars image_view text_view recline_view datastore datapusher repo_info harvest ckan_harvester spatial_metadata harvestdme_esa doc_harvester waf_harvester dcat dcat_rdf_harvester dcat_json_harvester dcat_json_interface
 WORKDIR ${APP_DIR}
 
 #########################
@@ -107,8 +107,13 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     pip install -r requirements.txt && \
     # Install CKAN envvars to support loading config from environment variables
     pip install -e git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
-    pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.0.0#egg=ckanext-harvest && \
-    pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.0.0/pip-requirements.txt && \
+    pip install --no-cache-dir git+https://github.com/okfn/ckanext-spatial.git#egg=ckanext-spatial && \
+    pip install --no-cache-dir -r https://raw.githubusercontent.com/ckan/ckanext-spatial/master/pip-requirements.txt && \
+    pip install -e git+https://github.com/ViderumGlobal/ckanext-harvest.git@sentinel#egg=ckanext-harvest && \
+    pip install -r https://raw.githubusercontent.com/ViderumGlobal/ckanext-harvest/sentinel/pip-requirements.txt && \
+    pip install -e git+https://github.com/ckan/ckanext-dcat.git#egg=ckanext-dcat && \
+pip install -r https://raw.githubusercontent.com/ckan/ckanext-dcat/master/requirements.txt && \
+
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
@@ -122,7 +127,8 @@ RUN pip install -e git+https://github.com/ckan/ckanext-googleanalytics.git@v0.0.
     pip install -r ${APP_DIR}/src/ckanext-sentry/requirements.txt && \
     pip install --no-cache-dir git+https://github.com/keitaroinc/ckanext-s3filestore.git@v0.0.6-minio#egg=ckanext-s3filestore &&  \
     pip install --no-cache-dir -r https://raw.githubusercontent.com/keitaroinc/ckanext-s3filestore/minio-to-s3/requirements.txt && \
-    pip install -e git+https://github.com/ckan/ckanext-repo.git#egg=ckanext-repo
+    pip install -e git+https://github.com/ckan/ckanext-repo.git#egg=ckanext-repo && \
+    pip install beautifulsoup4
 
 
 RUN touch crontab.tmp \
