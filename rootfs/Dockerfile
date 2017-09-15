@@ -36,7 +36,7 @@ RUN pip wheel --wheel-dir=/wheels uwsgi gevent
 ############
 ### MAIN ###
 ############
-FROM keitaro/base:0.3
+FROM keitaro/base:0.4
 
 MAINTAINER Keitaro Inc <info@keitaro.com>
 
