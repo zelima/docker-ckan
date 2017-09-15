@@ -5,7 +5,7 @@ FROM keitaro/ckanbuildenv:0.2 as ckanbuild
 
 # Set CKAN version to build
 ENV GIT_URL=https://github.com/ckan/ckan.git
-ENV GIT_BRANCH=ckan-2.6.2
+ENV GIT_BRANCH=ckan-2.6.3
 
 WORKDIR ${SRC_DIR}
 RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan
