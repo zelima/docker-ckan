@@ -1,4 +1,4 @@
-FROM keitaro/base:0.1
+FROM keitaro/base:0.4
 
 MAINTAINER Keitaro Inc <info@keitaro.info>
 
@@ -6,7 +6,7 @@ ENV APP_DIR=/srv/app
 ENV SRC_DIR=/srv/app/src
 ENV PIP_SRC=${SRC_DIR}
 ENV GIT_URL=https://github.com/ckan/ckan.git
-ENV GIT_BRANCH=ckan-2.6.2
+ENV GIT_BRANCH=ckan-2.6.3
 ENV CKAN_SITE_URL=http://localhost:5000
 ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars
 
@@ -20,7 +20,6 @@ RUN apk add --no-cache git \
         gettext \
         postgresql-client \
         python \
-        nginx \
         apache2-utils \
         libxml2 \
         libxslt && \
@@ -44,7 +43,6 @@ RUN apk add --no-cache git \
     # Install pip and gunicorn
     curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     python ${SRC_DIR}/get-pip.py && \
-    pip install gunicorn gevent && \
     pip install supervisor && \
     mkdir /etc/supervisord.d && \
     rm -rf ${SRC_DIR}/get-pip.py
@@ -86,7 +84,6 @@ RUN apk add --no-cache linux-headers && \
     cp src/redis-server /bin/redis-server && \
     rm -rf ${SRC_DIR}/redis-${REDIS_VERSION}
 
-
 #########################
 ### CKAN docker layer ###
 #########################
@@ -103,6 +100,16 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
 
+###################
+### Build uwsgi ###
+###################
+FROM keitaro/ckanbuildenv:0.2 as uwsgibuild
+RUN pip wheel --wheel-dir=/wheels uwsgi gevent
+
+# Create a local user and group to run the app
+RUN addgroup -g 92 -S ckan && \
+    adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
+
 RUN touch crontab.tmp \
     && echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
     && crontab crontab.tmp \
@@ -116,9 +123,12 @@ COPY setup ${APP_DIR}
 COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
 COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
 COPY setup/redis.conf /etc/supervisord.d/redis.conf
+COPY setup/uwsgi.conf /srv/app/uwsgi.conf
 
 EXPOSE 5000
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD curl --fail http://localhost:5000/api/3/action/status_show || exit 1
+
+USER ckan
 
 CMD ["/srv/app/start_ckan.sh"]
