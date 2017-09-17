@@ -84,19 +84,19 @@ COPY setup/supervisord.conf /etc
 ### redis docker layers ###
 ###########################
 # Compile and install redis needed for harvest and CKAN 2.7
-ENV REDIS_VERSION=3.2.9
-ENV CKAN__HARVEST__MQ__TYPE=redis
-ENV CKAN__HARVEST__MQ__HOSTNAME=localhost
-ENV CKAN__HARVEST__MQ__PORT=6379
-RUN apk add --no-cache linux-headers && \
-    cd ${SRC_DIR} && \
-    wget http://download.redis.io/releases/redis-${REDIS_VERSION}.tar.gz && \
-    tar xzf redis-${REDIS_VERSION}.tar.gz && \
-    rm -f redis-${REDIS_VERSION}.tar.gz && \
-    cd redis-${REDIS_VERSION} && \
-    make && \
-    cp src/redis-server /bin/redis-server && \
-    rm -rf ${SRC_DIR}/redis-${REDIS_VERSION}
+#ENV REDIS_VERSION=3.2.9
+#ENV CKAN__HARVEST__MQ__TYPE=redis
+#ENV CKAN__HARVEST__MQ__HOSTNAME=localhost
+#ENV CKAN__HARVEST__MQ__PORT=6379
+#RUN apk add --no-cache linux-headers && \
+#    cd ${SRC_DIR} && \
+#    wget http://download.redis.io/releases/redis-${REDIS_VERSION}.tar.gz && \
+#    tar xzf redis-${REDIS_VERSION}.tar.gz && \
+#    rm -f redis-${REDIS_VERSION}.tar.gz && \
+#    cd redis-${REDIS_VERSION} && \
+#    make && \
+#    cp src/redis-server /bin/redis-server && \
+#    rm -rf ${SRC_DIR}/redis-${REDIS_VERSION}
 
 #########################
 ### CKAN docker layer ###
@@ -131,7 +131,7 @@ COPY setup/cron.conf /etc/supervisord.d/cron.conf
 COPY setup ${APP_DIR}
 COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
 COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
-COPY setup/redis.conf /etc/supervisord.d/redis.conf
+#COPY setup/redis.conf /etc/supervisord.d/redis.conf
 COPY setup/uwsgi.conf /srv/app/uwsgi.conf
 
 RUN chown ckan -R /srv/app
