@@ -16,13 +16,21 @@ WORKDIR ${APP_DIR}
 ### Base docker layer ###
 #########################
 # Install necessary packages to run CKAN
+
 RUN apk add --no-cache git \
         gettext \
         postgresql-client \
         python \
         apache2-utils \
         libxml2 \
-        libxslt && \
+        libxslt \
+        musl-dev \
+        uwsgi \
+        uwsgi-http \
+        uwsgi-corerouter \
+        uwsgi-python \
+        py2-gevent \
+        uwsgi-gevent && \
     # Packages to build CKAN requirements and plugins
     apk add --no-cache --virtual .build-deps \
         postgresql-dev \
@@ -32,20 +40,24 @@ RUN apk add --no-cache git \
         autoconf \
         automake \
 	libtool \
-        musl-dev \
         python-dev \
         libxml2-dev \
-        libxslt-dev && \
+        libxslt-dev \
+        linux-headers && \
     # Create SRC_DIR
     mkdir -p ${SRC_DIR} && \
     # Create nginx run dir
     mkdir -p /run/nginx && \
-    # Install pip and gunicorn
+    # Install pip, supervisord and uwsgi
     curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     python ${SRC_DIR}/get-pip.py && \
     pip install supervisor && \
     mkdir /etc/supervisord.d && \
+    #pip wheel --wheel-dir=/wheels uwsgi gevent && \
     rm -rf ${SRC_DIR}/get-pip.py
+
+RUN echo "@testing http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
+    apk add --update --no-cache geos@testing geos-dev@testing py-geos@testing
 
 COPY setup/supervisord.conf /etc
 
@@ -58,13 +70,14 @@ RUN mkdir -p /var/log && \
 ### libgeos docker layer ###
 ############################
 # Build and install libgeos to support geospatial
-RUN git clone -b 3.6.0 --depth=1 --single-branch https://git.osgeo.org/gogs/geos/geos.git ${SRC_DIR}/geos && \
-    cd ${SRC_DIR}/geos && \
-    ./autogen.sh && \
-    ./configure --prefix /usr && \
-    make -j2 && \
-    make install && \
-    rm -rf ${SRC_DIR}/geos
+#ENV GEOS_VERSION=3.6.1
+#RUN git clone -b ${GEOS_VERSION} --depth=1 --single-branch https://git.osgeo.org/gogs/geos/geos.git ${SRC_DIR}/geos && \
+#    cd ${SRC_DIR}/geos && \
+#    ./autogen.sh && \
+#    ./configure --prefix /usr && \
+#    make -j2 && \
+#    make install-strip && \
+#    rm -rf ${SRC_DIR}/geos
 
 ###########################
 ### redis docker layers ###
@@ -100,12 +113,6 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
 
-###################
-### Build uwsgi ###
-###################
-FROM keitaro/ckanbuildenv:0.2 as uwsgibuild
-RUN pip wheel --wheel-dir=/wheels uwsgi gevent
-
 # Create a local user and group to run the app
 RUN addgroup -g 92 -S ckan && \
     adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
@@ -124,6 +131,8 @@ COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
 COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
 COPY setup/redis.conf /etc/supervisord.d/redis.conf
 COPY setup/uwsgi.conf /srv/app/uwsgi.conf
+
+RUN chown ckan -R /srv/app
 
 EXPOSE 5000
 
