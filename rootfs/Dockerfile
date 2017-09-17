@@ -117,10 +117,12 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
 RUN addgroup -g 92 -S ckan && \
     adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
 
-RUN touch crontab.tmp \
-    && echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
-    && crontab crontab.tmp \
-    && rm -rf crontab.tmp
+RUN touch /var/log/cron-ckan.log && \
+    chown ckan:ckan /var/log/cron-ckan.log && \
+    touch crontab.tmp && \
+    echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron-ckan.log 2>&1' > crontab.tmp && \
+    crontab -u ckan crontab.tmp && \
+    rm -rf crontab.tmp
 
 CMD [/usr/sbin/crond, -f, -d, 0]
 
