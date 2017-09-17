@@ -30,7 +30,8 @@ RUN apk add --no-cache git \
         uwsgi-corerouter \
         uwsgi-python \
         py2-gevent \
-        uwsgi-gevent && \
+        uwsgi-gevent \
+        sudo && \
     # Packages to build CKAN requirements and plugins
     apk add --no-cache --virtual .build-deps \
         postgresql-dev \
@@ -61,10 +62,10 @@ RUN echo "@testing http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/ap
 
 COPY setup/supervisord.conf /etc
 
-RUN mkdir -p /var/log && \
-    mkdir -m 0644 -p /var/spool/cron/crontabs && \
-    touch /var/log/cron.log && \
-    mkdir -m 0644 -p /etc/cron.d
+#RUN mkdir -p /var/log && \
+#    mkdir -m 0644 -p /var/spool/cron/crontabs && \
+#    touch /var/log/cron.log && \
+#    mkdir -m 0644 -p /etc/cron.d
 
 ############################
 ### libgeos docker layer ###
@@ -117,16 +118,15 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
 RUN addgroup -g 92 -S ckan && \
     adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
 
-RUN touch /var/log/cron-ckan.log && \
-    chown ckan:ckan /var/log/cron-ckan.log && \
+RUN touch /var/log/cron.log && \
+    chmod 666 /var/log/cron.log && \
     touch crontab.tmp && \
-    echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron-ckan.log 2>&1' > crontab.tmp && \
+    echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp && \
     crontab -u ckan crontab.tmp && \
     rm -rf crontab.tmp
 
-CMD [/usr/sbin/crond, -f, -d, 0]
-
 COPY setup/cron.conf /etc/supervisord.d/cron.conf
+#RUN ln -sf /proc/1/fd/1 /var/log/cron.log
 
 COPY setup ${APP_DIR}
 COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
@@ -139,7 +139,5 @@ RUN chown ckan -R /srv/app
 EXPOSE 5000
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD curl --fail http://localhost:5000/api/3/action/status_show || exit 1
-
-USER ckan
 
 CMD ["/srv/app/start_ckan.sh"]
