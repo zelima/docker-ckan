@@ -85,7 +85,7 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
 
 RUN touch crontab.tmp \
-    && echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
+    && echo '0 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
     && crontab crontab.tmp \
     && rm -rf crontab.tmp
 
