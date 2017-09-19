@@ -89,8 +89,6 @@ RUN touch crontab.tmp \
     && crontab crontab.tmp \
     && rm -rf crontab.tmp
 
-CMD [/usr/sbin/crond, -f, -d, 0]
-
 COPY setup/cron.conf /etc/supervisord.d/cron.conf
 
 COPY setup ${APP_DIR}
