@@ -112,7 +112,7 @@ RUN pip install kombu==3.0.30 && \
     pip install celery==3.1.0
 
 #RUN touch crontab.tmp \
-#    && echo '*/2 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
+#    && echo '0 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
 #    && crontab crontab.tmp \
 #    && rm -rf crontab.tmp
 
