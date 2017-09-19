@@ -117,12 +117,12 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
 # Install Celery
 RUN pip install celery==3.1.0 && \
     pip install kombu==3.0.30 && \
-    pip install redis &&\
+    pip install redis
 
-RUN touch crontab.tmp \
-    && echo '*/2 * * * * paster --plugin=ckanext-archiver archiver update -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp \
-    && crontab crontab.tmp \
-    && rm -rf crontab.tmp
+RUN touch crontab.tmp && \
+    echo '0 * * * * paster --plugin=ckanext-archiver archiver update -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp && \
+    crontab crontab.tmp && \
+    rm -rf crontab.tmp
 
 COPY setup/cron.conf /etc/supervisord.d/cron.conf
 
