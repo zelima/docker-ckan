@@ -102,8 +102,9 @@ RUN apk add --no-cache linux-headers && \
 ### Celery docker layer ###
 #########################
 # Install Celery
-RUN pip install kombu==3.0.30 && \
-    pip install celery==3.1.0
+RUN pip install celery==3.1.0 && \
+    pip install kombu==3.0.30 && \
+    pip install redis
 
 #########################
 ### CKAN docker layer ###
