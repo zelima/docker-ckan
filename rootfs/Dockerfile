@@ -99,6 +99,13 @@ RUN apk add --no-cache linux-headers && \
     rm -rf ${SRC_DIR}/redis-${REDIS_VERSION}
 
 #########################
+### Celery docker layer ###
+#########################
+# Install Celery
+RUN pip install kombu==3.0.30 && \
+    pip install celery==3.1.0
+
+#########################
 ### CKAN docker layer ###
 #########################
 # Install CKAN
@@ -133,6 +140,7 @@ COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
 COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
 COPY setup/redis.conf /etc/supervisord.d/redis.conf
 COPY setup/uwsgi.conf /srv/app/uwsgi.conf
+COPY setup/celery.conf /etc/supervisord.d/celery.conf
 
 RUN chown ckan -R /srv/app
 
