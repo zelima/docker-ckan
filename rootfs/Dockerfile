@@ -139,7 +139,7 @@ COPY setup/cron.conf /etc/supervisord.d/cron.conf
 COPY setup ${APP_DIR}
 #COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
 #COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
-COPY setup/redis.conf /etc/supervisord.d/redis.conf
+#COPY setup/redis.conf /etc/supervisord.d/redis.conf
 COPY setup/uwsgi.conf /srv/app/uwsgi.conf
 COPY setup/celery.conf /etc/supervisord.d/celery.conf
 
