@@ -8,7 +8,7 @@ ENV PIP_SRC=${SRC_DIR}
 ENV GIT_URL=https://github.com/ckan/ckan.git
 ENV GIT_BRANCH=ckan-2.6.3
 ENV CKAN_SITE_URL=http://localhost:5000
-ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher envvars
+ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher envvars archiver report
 
 WORKDIR ${APP_DIR}
 
