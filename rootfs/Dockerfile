@@ -118,6 +118,7 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     pip install -e git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
 #    pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.0.0#egg=ckanext-harvest && \
 #    pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.0.0/pip-requirements.txt && \
+    pip install -e git+http://github.com/datagovuk/ckanext-report.git#egg=ckanext-report && \
     pip install --no-cache-dir -e git+https://github.com/keitaroinc/ckanext-archiver.git@v0.0.4#egg=ckanext-archiver && \
     pip install --no-cache-dir -r https://raw.githubusercontent.com/keitaroinc/ckanext-archiver/v0.0.4/requirements.txt && \
     # Create and update CKAN config
