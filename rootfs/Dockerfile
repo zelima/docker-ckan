@@ -8,7 +8,7 @@ ENV PIP_SRC=${SRC_DIR}
 ENV GIT_URL=https://github.com/ckan/ckan.git
 ENV GIT_BRANCH=ckan-2.6.3
 ENV CKAN_SITE_URL=http://localhost:5000
-ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars
+ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester archiver report envvars 
 
 WORKDIR ${APP_DIR}
 
@@ -118,6 +118,9 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     pip install -e git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
     pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.0.0#egg=ckanext-harvest && \
     pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.0.0/pip-requirements.txt && \
+    pip install -e git+http://github.com/datagovuk/ckanext-report.git#egg=ckanext-report && \
+    pip install --no-cache-dir -e git+https://github.com/keitaroinc/ckanext-archiver.git@v0.0.4#egg=ckanext-archiver && \
+    pip install --no-cache-dir -r https://raw.githubusercontent.com/keitaroinc/ckanext-archiver/v0.0.4/requirements.txt && \
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
@@ -130,6 +133,7 @@ RUN touch /var/log/cron.log && \
     chmod 0666 /var/log/cron.log && \
     touch crontab.tmp && \
     echo '0 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp && \
+    echo '0 * * * * paster --plugin=ckanext-archiver archiver update -c /srv/app/production.ini >> /var/log/cron.log 2>&1' >> crontab.tmp && \
     crontab -u ckan crontab.tmp && \
     rm -rf crontab.tmp
 
