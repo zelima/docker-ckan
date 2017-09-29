@@ -32,6 +32,7 @@ RUN apk add --no-cache git \
         uwsgi-python \
         py2-gevent \
         uwsgi-gevent \
+        libmagic \
         sudo && \
     # Packages to build CKAN requirements and plugins
     apk add --no-cache --virtual .build-deps \
