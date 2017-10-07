@@ -134,7 +134,7 @@ RUN touch /var/log/cron.log && \
     chmod 0666 /var/log/cron.log && \
     touch crontab.tmp && \
     echo '0 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp && \
-    echo '0 * * * * paster --plugin=ckanext-archiver archiver update -c /srv/app/production.ini >> /var/log/cron.log 2>&1' >> crontab.tmp && \
+    #echo '30 * * * * paster --plugin=ckanext-archiver archiver update -c /srv/app/production.ini >> /var/log/cron.log 2>&1' >> crontab.tmp && \
     crontab -u ckan crontab.tmp && \
     rm -rf crontab.tmp
 
