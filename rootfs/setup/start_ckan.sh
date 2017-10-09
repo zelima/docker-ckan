@@ -3,7 +3,7 @@
 python prerun.py
 
 # Set the common uwsgi options
-UWSGI_OPTS="--plugins http,python,gevent --socket /tmp/uwsgi.sock --uid 92 --gid 92 --http :5000 --master --enable-threads --paste config:/srv/app/production.ini --lazy-apps --gevent 2000 -p 2 -L"
+UWSGI_OPTS="--plugins http,python,gevent --socket /tmp/uwsgi.sock --uid 92 --gid 92 --http :4000 --master --enable-threads --paste config:/srv/app/production.ini --lazy-apps --gevent 2000 -p 2 -L"
 
 # Check whether http basic auth password protection is enabled and enable basicauth routing on uwsgi respecfully
 if [ $? -eq 0 ]
@@ -16,6 +16,8 @@ then
       htpasswd -d -b -c /srv/app/.htpasswd $HTPASSWD_USER $HTPASSWD_PASSWORD
       # Start supervisord
       supervisord --configuration /etc/supervisord.conf &
+      # Start Varnish
+      sudo -u ckan -EH varnishd -f /etc/varnish/default.vcl -s malloc,100M -a 0.0.0.0:5000
       # Start uwsgi with basicauth
       sudo -u ckan -EH uwsgi --ini /srv/app/uwsgi.conf --pcre-jit $UWSGI_OPTS
     else
@@ -25,6 +27,8 @@ then
   else
     # Start supervisord
     supervisord --configuration /etc/supervisord.conf &
+    # Start Varnish
+    sudo -u ckan -EH varnishd -f /etc/varnish/default.vcl -s malloc,100M -a 0.0.0.0:5000
     # Start uwsgi
     sudo -u ckan -EH uwsgi $UWSGI_OPTS
   fi
