@@ -150,6 +150,7 @@ COPY setup ${APP_DIR}
 COPY setup/redis.conf /etc/supervisord.d/redis.conf
 COPY setup/uwsgi.conf /srv/app/uwsgi.conf
 COPY setup/celery.conf /etc/supervisord.d/celery.conf
+COPY setup/celery_archiver.conf /etc/supervisord.d/celery_archiver.conf
 COPY setup/varnish/default.vcl /etc/varnish/default.vcl
 RUN chown -R ckan:ckan /etc/varnish /var/lib/varnish
 
