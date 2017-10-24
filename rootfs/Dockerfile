@@ -46,6 +46,7 @@ RUN apk add --no-cache git \
         python-dev \
         libxml2-dev \
         libxslt-dev \
+        libffi-dev \
         linux-headers && \
     # Create SRC_DIR
     mkdir -p ${SRC_DIR} && \
@@ -100,13 +101,6 @@ RUN apk add --no-cache linux-headers && \
     cp src/redis-server /bin/redis-server && \
     rm -rf ${SRC_DIR}/redis-${REDIS_VERSION}
 
-#########################
-### Celery docker layer ###
-#########################
-# Install Celery
-RUN pip install celery==3.1.0 && \
-    pip install kombu==3.0.30 && \
-    pip install redis
 
 #########################
 ### CKAN docker layer ###
@@ -118,14 +112,22 @@ RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan && \
     pip install -r requirements.txt && \
     # Install CKAN envvars to support loading config from environment variables
     pip install -e git+https://github.com/okfn/ckanext-envvars.git#egg=ckanext-envvars && \
-#    pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.0.0#egg=ckanext-harvest && \
-#    pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.0.0/pip-requirements.txt && \
     pip install -e git+http://github.com/datagovuk/ckanext-report.git#egg=ckanext-report && \
-    pip install --no-cache-dir -e git+https://github.com/keitaroinc/ckanext-archiver.git@v0.0.5#egg=ckanext-archiver && \
-    pip install --no-cache-dir -r https://raw.githubusercontent.com/keitaroinc/ckanext-archiver/v0.0.5/requirements.txt && \
+    pip install --no-cache-dir -e git+https://github.com/keitaroinc/ckanext-archiver.git@v0.0.6#egg=ckanext-archiver && \
+    pip install --no-cache-dir -r https://raw.githubusercontent.com/keitaroinc/ckanext-archiver/v0.0.6/requirements.txt && \
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
+
+
+#########################
+### Celery docker layer ###
+#########################
+# Install Celery
+RUN pip install celery==3.1.0 && \
+    pip install kombu==3.0.30 && \
+    pip install redis
+
 
 # Create a local user and group to run the app
 RUN addgroup -g 92 -S ckan && \
@@ -133,20 +135,13 @@ RUN addgroup -g 92 -S ckan && \
 
 RUN touch /var/log/cron.log && \
     chmod 0666 /var/log/cron.log && \
-#    touch crontab.tmp && \
     echo '0 * * * * paster --plugin=ckanext-archiver archiver update -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp && \
     crontab crontab.tmp && \
     rm -rf crontab.tmp
-#    echo '0 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp && \
-#    crontab -u ckan crontab.tmp && \
-#    rm -rf crontab.tmp
 
 COPY setup/cron.conf /etc/supervisord.d/cron.conf
-#RUN ln -sf /proc/1/fd/1 /var/log/cron.log
 
 COPY setup ${APP_DIR}
-#COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
-#COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
 COPY setup/redis.conf /etc/supervisord.d/redis.conf
 COPY setup/uwsgi.conf /srv/app/uwsgi.conf
 COPY setup/celery.conf /etc/supervisord.d/celery.conf
