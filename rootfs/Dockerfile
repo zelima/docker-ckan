@@ -7,7 +7,7 @@ ENV SRC_DIR=/srv/app/src
 ENV PIP_SRC=${SRC_DIR}
 ENV GIT_URL=https://github.com/ckan/ckan.git
 ENV GIT_BRANCH=ckan-2.7.2
-ENV CKAN_SITE_URL=http://localhost:5000
+ENV CKAN_SITE_URL=http://localhost:80
 ENV CKAN__PLUGINS image_view text_view recline_view datastore datapusher harvest ckan_harvester envvars
 
 WORKDIR ${APP_DIR}
@@ -137,8 +137,8 @@ COPY setup/uwsgi.conf /srv/app/uwsgi.conf
 
 RUN chown ckan -R /srv/app
 
-EXPOSE 5000
+EXPOSE 80
 
-HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD curl --fail http://localhost:5000/api/3/action/status_show || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD curl --fail http://localhost:80/api/3/action/status_show || exit 1
 
 CMD ["/srv/app/start_ckan.sh"]
