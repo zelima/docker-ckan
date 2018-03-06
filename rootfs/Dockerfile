@@ -87,7 +87,7 @@ COPY setup/supervisord.conf /etc
 ### redis docker layers ###
 ###########################
 # Compile and install redis needed for harvest and CKAN 2.7
-ENV REDIS_VERSION=3.2.9
+ENV REDIS_VERSION=4.0.8
 ENV CKAN__HARVEST__MQ__TYPE=redis
 ENV CKAN__HARVEST__MQ__HOSTNAME=localhost
 ENV CKAN__HARVEST__MQ__PORT=6379
