@@ -85,7 +85,7 @@ def create_sysadmin():
         command = ['paster', '--plugin=ckan', 'user', name, '-c', ckan_ini]
 
         out = subprocess.check_output(command)
-        if 'User: \nNone\n' not in out:
+        if 'User: \n None\n' not in out:
             print '[prerun] Sysadmin user exists, skipping creation'
             return
 
