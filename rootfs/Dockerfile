@@ -1,4 +1,4 @@
-FROM keitaro/base:0.4
+FROM keitaro/base:0.5
 
 MAINTAINER Keitaro Inc <info@keitaro.info>
 
@@ -86,7 +86,7 @@ COPY setup/supervisord.conf /etc
 ###########################
 ### redis docker layers ###
 ###########################
-# Compile and install redis needed for harvest and CKAN 2.7
+# Compile and install redis needed for harvest and CKAN 2.8
 ENV REDIS_VERSION=4.0.8
 ENV CKAN__HARVEST__MQ__TYPE=redis
 ENV CKAN__HARVEST__MQ__HOSTNAME=localhost
