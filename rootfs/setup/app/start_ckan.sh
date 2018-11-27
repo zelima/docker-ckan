@@ -3,9 +3,9 @@
 python prerun.py
 
 # Run any startup scripts provided by images extending this one
-if [[ -d "/docker-entrypoint.d" ]]
+if [[ -d "docker-entrypoint.d" ]]
 then
-    for f in /docker-entrypoint.d/*; do
+    for f in docker-entrypoint.d/*; do
         case "$f" in
             *.sh)     echo "$0: Running init file $f"; . "$f" ;;
             *.py)     echo "$0: Running init file $f"; python "$f"; echo ;;
