@@ -85,7 +85,6 @@ def init_db():
             raise e
     print '[prerun] Initializing or upgrading db - finish'
 
-
 def init_datastore():
 
     conn_str = os.environ.get('CKAN_DATASTORE_WRITE_URL')
@@ -133,7 +132,6 @@ def init_datastore():
         cursor.close()
         connection.close()
 
-
 def create_sysadmin():
 
     print '[prerun] Start create_sysadmin...'
@@ -180,7 +178,6 @@ if __name__ == '__main__':
         check_db_connection()
         check_solr_connection()
         init_db()
-        if os.environ.get('CKAN_DATASTORE_WRITE_URL'):
-            init_datastore()
+        init_datastore()
         create_sysadmin()
         #time.sleep(60000)   # don't end the prerun script to allow container dock and debug
