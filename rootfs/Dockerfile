@@ -5,7 +5,7 @@ FROM alpine:3.8 as ckanbuild
 
 # Set CKAN version to build
 ENV GIT_URL=https://github.com/ckan/ckan.git
-ENV GIT_BRANCH=ckan-2.8.0
+ENV GIT_BRANCH=ckan-2.7.3
 
 # Set src dirs
 ENV SRC_DIR=/srv/app/src
@@ -38,10 +38,14 @@ RUN mkdir -p ${SRC_DIR}
 RUN curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     python ${SRC_DIR}/get-pip.py
 
+RUN pip install --upgrade psycopg2==2.7.3.2
+
 # Fetch and build CKAN and requirements
 RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan
 RUN rm -rf /srv/app/src/ckan/.git
-RUN pip wheel --wheel-dir=/wheels -r ckan/requirements.txt
+
+RUN sed -i 's/psycopg2==2.4.5/psycopg2==2.7.3.2/' ckan/requirements.txt && \
+    pip wheel --wheel-dir=/wheels -r ckan/requirements.txt
 RUN pip wheel --wheel-dir=/wheels uwsgi gevent
 
 ############
