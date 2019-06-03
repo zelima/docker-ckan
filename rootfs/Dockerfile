@@ -1,7 +1,7 @@
 ##################
 ### Build CKAN ###
 ##################
-FROM alpine:3.8 as ckanbuild
+FROM ubuntu:18.04 as ckanbuild
 
 # Set CKAN version to build
 ENV GIT_URL=https://github.com/ckan/ckan.git
@@ -14,12 +14,12 @@ ENV PIP_SRC=${SRC_DIR}
 WORKDIR ${SRC_DIR}
 
 # Packages to build CKAN requirements and plugins
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
         git \
         curl \
         python \
-        postgresql-dev \
-        linux-headers \
+        postgresql-server-dev-all \
+        linux-headers-$(uname -r) \
         gcc \
         make \
         g++ \
@@ -27,8 +27,8 @@ RUN apk add --no-cache \
         automake \
         libtool \
         musl-dev \
-        pcre-dev \
-        pcre \
+        libpcre3 \
+        libpcre3-dev \
         python-dev
 
 # Create the src directory
@@ -47,7 +47,7 @@ RUN pip wheel --wheel-dir=/wheels uwsgi gevent
 ############
 ### MAIN ###
 ############
-FROM alpine:3.8
+FROM ubuntu:18.04
 
 MAINTAINER Keitaro Inc <info@keitaro.com>
 
@@ -60,14 +60,14 @@ ENV CKAN__PLUGINS envvars image_view text_view recline_view datastore datapusher
 WORKDIR ${APP_DIR}
 
 # Install necessary packages to run CKAN
-RUN apk add --no-cache git \
-        bash \
+RUN apt-get update && apt-get install -y \
+        git \
         gettext \
         curl \
         postgresql-client \
         python \
-        libmagic \
-        pcre \
+        libmagic-dev \
+        libpcre3 \
         apache2-utils && \
     # Create SRC_DIR
     mkdir -p ${SRC_DIR}
@@ -87,8 +87,9 @@ COPY setup/app ${APP_DIR}
 RUN pip install --no-index --find-links=/srv/app/wheels uwsgi gevent
 
 # Create a local user and group to run the app
-RUN addgroup -g 92 -S ckan && \
-    adduser -u 92 -h /srv/app -H -D -S -G ckan ckan
+
+RUN groupadd ckan
+RUN useradd -d /srv/app -g ckan ckan 
 
 # Install CKAN
 RUN pip install -e /srv/app/src/ckan && \
