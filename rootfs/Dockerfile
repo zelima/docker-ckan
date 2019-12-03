@@ -1,7 +1,7 @@
 ##################
 ### Build CKAN ###
 ##################
-FROM alpine:3.8 as ckanbuild
+FROM alpine:3.10 as ckanbuild
 
 # Set CKAN version to build
 ENV GIT_URL=https://github.com/ckan/ckan.git
@@ -29,7 +29,8 @@ RUN apk add --no-cache \
         musl-dev \
         pcre-dev \
         pcre \
-        python-dev
+        python-dev \
+	libmagic
 
 # Create the src directory
 RUN mkdir -p ${SRC_DIR}
@@ -47,7 +48,7 @@ RUN pip wheel --wheel-dir=/wheels uwsgi gevent
 ############
 ### MAIN ###
 ############
-FROM alpine:3.8
+FROM alpine:3.10
 
 MAINTAINER Keitaro Inc <info@keitaro.com>
 
