@@ -55,7 +55,7 @@ ENV APP_DIR=/srv/app
 ENV SRC_DIR=/srv/app/src
 ENV PIP_SRC=${SRC_DIR}
 ENV CKAN_SITE_URL=http://localhost:5000
-ENV CKAN__PLUGINS envvars image_view text_view recline_view datastore datapusher
+ENV CKAN__PLUGINS envvars image_view text_view recline_view datastore datapusher harvest ckan_harvester
 
 WORKDIR ${APP_DIR}
 
@@ -72,9 +72,12 @@ RUN apk add --no-cache git \
     # Create SRC_DIR
     mkdir -p ${SRC_DIR}
 
-# Install pip
+# Install pip and supervisor
 RUN curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
-    python ${SRC_DIR}/get-pip.py
+    python ${SRC_DIR}/get-pip.py && \
+    pip install supervisor && \
+    mkdir /etc/supervisord.d && \
+    echo "OK"
 
 # Get artifacts from build stages
 COPY --from=ckanbuild /wheels /srv/app/wheels
@@ -97,11 +100,29 @@ RUN pip install -e /srv/app/src/ckan && \
     pip install --no-index --find-links=/srv/app/wheels -r requirements.txt && \
     # Install CKAN envvars to support loading config from environment variables
     pip install -e git+https://github.com/okfn/ckanext-envvars.git@0.0.1#egg=ckanext-envvars && \
+    pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.1.4#egg=ckanext-harvest && \
+    pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.1.4/pip-requirements.txt && \
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
-    paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}" && \
-    # Change ownership to app user
-    chown -R ckan:ckan /srv/app
+    paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
+
+
+RUN touch /var/log/cron.log && \
+    chmod 0666 /var/log/cron.log && \
+    touch crontab.tmp && \
+    echo '0 * * * * paster --plugin=ckanext-harvest harvester run -c /srv/app/production.ini >> /var/log/cron.log 2>&1' > crontab.tmp && \
+    crontab -u ckan crontab.tmp && \
+    rm -rf crontab.tmp
+
+COPY setup/supervisord.conf /etc/supervisord.d/supervisord.conf
+COPY setup/cron.conf /etc/supervisord.d/cron.conf
+
+COPY setup ${APP_DIR}
+COPY setup/harvest.conf /etc/supervisord.d/harvest.conf
+COPY setup/prerun_harvest.py ${APP_DIR}/prerun_harvest.py
+    
+# Change ownership to app user
+RUN chown -R ckan:ckan /srv/app
 
 # Remove wheels
 RUN rm -rf /srv/app/wheels
