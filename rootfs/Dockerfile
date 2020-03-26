@@ -56,6 +56,7 @@ ENV SRC_DIR=/srv/app/src
 ENV PIP_SRC=${SRC_DIR}
 ENV CKAN_SITE_URL=http://localhost:5000
 ENV CKAN__PLUGINS envvars image_view text_view recline_view datastore datapusher harvest ckan_harvester
+ENV TZ Europe/Skopje
 
 WORKDIR ${APP_DIR}
 
@@ -68,16 +69,14 @@ RUN apk add --no-cache git \
         python \
         libmagic \
         pcre \
+        tzdata \
         apache2-utils && \
     # Create SRC_DIR
     mkdir -p ${SRC_DIR}
 
-# Install pip and supervisor
+# Install pip
 RUN curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
-    python ${SRC_DIR}/get-pip.py && \
-    pip install supervisor && \
-    mkdir /etc/supervisord.d && \
-    echo "OK"
+    python ${SRC_DIR}/get-pip.py
 
 # Get artifacts from build stages
 COPY --from=ckanbuild /wheels /srv/app/wheels
@@ -86,8 +85,10 @@ COPY --from=ckanbuild /srv/app/src/ckan /srv/app/src/ckan
 # Copy necessary scripts
 COPY setup/app ${APP_DIR}
 
-# Additional install steps for build stages artifacts
-RUN pip install --no-index --find-links=/srv/app/wheels uwsgi gevent
+# Additional install steps for build stages artifacts and supervisor
+RUN pip install --no-index --find-links=/srv/app/wheels uwsgi gevent && \
+    pip install supervisor && \
+    mkdir /etc/supervisord.d
 
 # Create a local user and group to run the app
 RUN addgroup -g 92 -S ckan && \
@@ -106,7 +107,6 @@ RUN pip install -e /srv/app/src/ckan && \
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
 
-
 RUN touch /var/log/cron.log && \
     chmod 0666 /var/log/cron.log && \
     touch crontab.tmp && \
@@ -114,7 +114,7 @@ RUN touch /var/log/cron.log && \
     crontab -u ckan crontab.tmp && \
     rm -rf crontab.tmp
 
-COPY setup/supervisord.conf /etc/supervisord.d/supervisord.conf
+COPY setup/supervisord.conf /etc/supervisord.conf
 COPY setup/cron.conf /etc/supervisord.d/cron.conf
 
 COPY setup ${APP_DIR}

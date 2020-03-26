@@ -35,7 +35,7 @@ then
     fi
   else
     # Start supervisord
-    /usr/bin/supervisord --configuration /etc/supervisord.conf &
+    supervisord --configuration /etc/supervisord.conf &
     # Start uwsgi
     uwsgi $UWSGI_OPTS
   fi
