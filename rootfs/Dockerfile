@@ -29,7 +29,9 @@ RUN apk add --no-cache \
         musl-dev \
         pcre-dev \
         pcre \
-        python-dev
+        python-dev \
+        openssl-dev \
+        libffi-dev
 
 # Create the src directory
 RUN mkdir -p ${SRC_DIR}
@@ -70,6 +72,13 @@ RUN apk add --no-cache git \
         libmagic \
         pcre \
         tzdata \
+        linux-headers \
+        gcc \
+        make \
+        g++ \
+        python-dev \
+        openssl-dev \
+        libffi-dev \
         apache2-utils && \
     # Create SRC_DIR
     mkdir -p ${SRC_DIR}
@@ -101,8 +110,8 @@ RUN pip install -e /srv/app/src/ckan && \
     pip install --no-index --find-links=/srv/app/wheels -r requirements.txt && \
     # Install CKAN envvars to support loading config from environment variables
     pip install -e git+https://github.com/okfn/ckanext-envvars.git@0.0.1#egg=ckanext-envvars && \
-    pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.1.4#egg=ckanext-harvest && \
-    pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.1.4/pip-requirements.txt && \
+    pip install -e git+https://github.com/ckan/ckanext-harvest.git@v1.2.0#egg=ckanext-harvest && \
+    pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.2.0/pip-requirements.txt && \
     # Create and update CKAN config
     paster --plugin=ckan make-config ckan ${APP_DIR}/production.ini && \
     paster --plugin=ckan config-tool ${APP_DIR}/production.ini "ckan.plugins = ${CKAN__PLUGINS}"
