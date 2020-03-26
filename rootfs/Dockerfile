@@ -1,11 +1,11 @@
 ##################
 ### Build CKAN ###
 ##################
-FROM alpine:3.8 as ckanbuild
+FROM alpine:3.11 as ckanbuild
 
 # Set CKAN version to build
 ENV GIT_URL=https://github.com/ckan/ckan.git
-ENV GIT_BRANCH=ckan-2.8.2
+ENV GIT_TAG=ckan-2.8.3
 
 # Set src dirs
 ENV SRC_DIR=/srv/app/src
@@ -39,7 +39,7 @@ RUN curl -o ${SRC_DIR}/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     python ${SRC_DIR}/get-pip.py
 
 # Fetch and build CKAN and requirements
-RUN pip install -e git+${GIT_URL}@${GIT_BRANCH}#egg=ckan
+RUN pip install -e git+${GIT_URL}@${GIT_TAG}#egg=ckan
 RUN rm -rf /srv/app/src/ckan/.git
 RUN pip wheel --wheel-dir=/wheels -r ckan/requirements.txt
 RUN pip wheel --wheel-dir=/wheels uwsgi gevent
@@ -47,7 +47,7 @@ RUN pip wheel --wheel-dir=/wheels uwsgi gevent
 ############
 ### MAIN ###
 ############
-FROM alpine:3.8
+FROM alpine:3.11
 
 MAINTAINER Keitaro Inc <info@keitaro.com>
 
